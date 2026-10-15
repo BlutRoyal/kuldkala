@@ -14,6 +14,7 @@
   let filter = store.get('kk_filter') || 'all';
   let token = null;
   let editing = null;
+  let touched = {};
 
   // ---------- kuupäevad ----------
   const pad = (n) => String(n).padStart(2, '0');
@@ -254,9 +255,30 @@
     setSeg('tag-seg', t ? t.tag : (filter === 'all' ? 'Era' : filter));
     setSeg('list-seg', t ? t.list : '');
     $('#delete').classList.toggle('hidden', !t);
+    touched = {};
+    $('#parse-hint').textContent = '';
     $('#editor').showModal();
     if (!t) form.title.focus();
   }
+
+  // vaba tekst: "homme kell 15 helista Peetrile #töö" täidab kuupäeva, kella ja sildi
+  function parseTitle() {
+    if (editing || !window.kkParse) return null;
+    const r = window.kkParse(form.title.value);
+    return r.title && (r.due || r.time || r.tag) ? r : null;
+  }
+  form.title.addEventListener('input', () => {
+    const r = parseTitle();
+    if (!editing) {
+      if (!touched.due) form.due.value = r ? r.due : '';
+      if (!touched.time) form.time.value = r ? r.time : '';
+      if (!touched.tag && r && r.tag) setSeg('tag-seg', r.tag);
+    }
+    $('#parse-hint').textContent = r ? `✨ Pealkiri: ${r.title}` : '';
+  });
+  form.due.addEventListener('input', () => { touched.due = true; });
+  form.time.addEventListener('input', () => { touched.time = true; });
+  $('#tag-seg').addEventListener('click', () => { touched.tag = true; });
 
   form.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -264,6 +286,8 @@
       title: form.title.value.trim(), tag: segVal('tag-seg'), list: segVal('list-seg'),
       due: form.due.value, time: form.time.value, firstStep: form.firstStep.value.trim(), notes: form.notes.value.trim(),
     };
+    const parsed = parseTitle();
+    if (parsed) data.title = parsed.title;
     if (!data.title) return;
     $('#editor').close();
     if (editing) {

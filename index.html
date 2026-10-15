@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="style.css">
   <script src="config.js"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="parse.js" defer></script>
   <script src="app.js" defer></script>
 </head>
 <body>
@@ -50,7 +51,8 @@
   <dialog id="editor">
     <form id="task-form" method="dialog">
       <h2 id="editor-title">Uus asi</h2>
-      <input name="title" placeholder="Mis vaja teha?" autocomplete="off" required>
+      <input name="title" placeholder="nt homme kell 15 helista Peetrile #töö" autocomplete="off" required>
+      <div id="parse-hint" class="hint"></div>
       <div class="seg" id="tag-seg">
         <button type="button" data-v="Era">Era</button>
         <button type="button" data-v="Töö">Töö</button>
