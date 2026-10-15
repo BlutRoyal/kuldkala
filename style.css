@@ -64,6 +64,13 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 .top-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .eyebrow { font-size: 13px; font-weight: 500; color: var(--text-2); letter-spacing: .01em; }
 #greeting { margin: 2px 0 0; font-size: 30px; line-height: 1.15; font-weight: 700; letter-spacing: -.025em; }
+.top-actions { display: flex; gap: 8px; }
+#bell { color: var(--accent); }
+.select-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px; color: var(--text-2); padding: 0 2px; }
+select {
+  flex: 1; max-width: 70%; padding: 11px 12px; border-radius: 12px; border: 0; font: inherit; font-size: 15px;
+  background: var(--surface-2); color: var(--text); appearance: none; text-align: right;
+}
 .icon-btn {
   width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
   color: var(--text-2); background: var(--surface); box-shadow: var(--shadow);
@@ -187,6 +194,18 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
 .seg { display: flex; gap: 2px; padding: 3px; background: var(--surface-2); border-radius: 12px; }
 .seg button { flex: 1; height: 36px; border-radius: 9px; font-size: 14px; font-weight: 500; color: var(--text-2); }
 .seg button.active { background: var(--seg-on); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.log-box { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 14px; background: var(--surface-2); }
+.log-box input { background: var(--surface); }
+.log-title { font-size: 12px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: .05em; }
+.log-actions { display: flex; gap: 8px; }
+.log-actions button { flex: 1; height: 40px; border-radius: 10px; font-size: 14px; font-weight: 600; background: var(--surface); }
+#log-wait { background: var(--accent); color: var(--accent-ink); }
+#log-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; max-height: 160px; overflow: auto; }
+#log-list li { font-size: 14px; display: flex; gap: 10px; }
+#log-list time { color: var(--text-3); flex: none; font-variant-numeric: tabular-nums; }
+#log-list:empty { display: none; }
+.t-log { font-size: 14px; color: var(--text-2); margin-top: 2px; }
+.t-log::before { content: "↳ "; color: var(--blue); }
 .actions { display: flex; gap: 8px; align-items: center; margin-top: 4px; }
 .actions .spacer { flex: 1; }
 .actions button { height: 46px; padding: 0 18px; border-radius: 12px; font-weight: 600; font-size: 15px; }

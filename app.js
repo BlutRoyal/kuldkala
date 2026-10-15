@@ -21,6 +21,7 @@
   const isoDay = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   const today = () => isoDay(new Date());
   const WD = ['P', 'E', 'T', 'K', 'N', 'R', 'L'];
+  const fmtDay = (s) => (s ? `${s.slice(8, 10)}.${s.slice(5, 7)}` : '');
   function fmtDue(t) {
     if (!t.due) return '';
     const d = new Date(t.due + 'T00:00:00');
@@ -47,6 +48,7 @@
     store.set('kk_token', token);
     showMain();
     load();
+    enablePush(true);
   }
 
   function initGoogle() {
@@ -109,6 +111,7 @@
       case 'done': return Promise.resolve({ ...find(), status: 'done', doneAt: now });
       case 'reopen': return Promise.resolve({ ...find(), status: 'open', doneAt: '' });
       case 'delete': return Promise.resolve({ id: data.id });
+      case 'addLog': return Promise.resolve(find()); // optimistlik muudatus on juba tehtud
     }
   }
 
@@ -159,11 +162,11 @@
     const vis = tasks.filter((t) => filter === 'all' || t.tag === filter);
     const open = vis.filter((t) => t.status !== 'done').sort((a, b) => sortKey(a).localeCompare(sortKey(b)));
     const g = [
-      { key: 'overdue', title: 'Tähtaeg möödas', items: open.filter((t) => !t.list && t.due && t.due < td) },
-      { key: 'today', title: 'Täna', items: open.filter((t) => !t.list && t.due === td) },
+      { key: 'overdue', title: 'Tähtaeg möödas', items: open.filter((t) => t.list !== 'kunagi' && t.due && t.due < td) },
+      { key: 'today', title: 'Täna', items: open.filter((t) => t.list !== 'kunagi' && t.due === td) },
       { key: 'soon', title: 'Tulemas', items: open.filter((t) => !t.list && t.due && t.due > td) },
       { key: 'nodate', title: 'Ilma tähtajata', items: open.filter((t) => !t.list && !t.due) },
-      { key: 'waiting', title: 'Ootan teiste taga', items: open.filter((t) => t.list === 'ootan') },
+      { key: 'waiting', title: 'Ootan vastust', items: open.filter((t) => t.list === 'ootan' && !(t.due && t.due <= td)) },
       { key: 'someday', title: 'Kunagi', items: open.filter((t) => t.list === 'kunagi'), collapsed: true },
       {
         key: 'done', title: 'Tehtud', collapsed: true,
@@ -177,7 +180,10 @@
     const done = t.status === 'done';
     const late = !done && t.due && t.due < today();
     const meta = [];
-    if (t.due) meta.push(`<span class="${late ? 'late' : ''}">${esc(fmtDue(t))}</span>`);
+    const waiting = t.list === 'ootan';
+    if (waiting) meta.push('<span>⏳ ootan</span>');
+    if (t.due) meta.push(`<span class="${late ? 'late' : ''}">${waiting ? 'küsi järele ' : ''}${esc(fmtDue(t))}${t.repeat ? ' ↻' : ''}</span>`);
+    const lastLog = (t.log || '').split('\n')[0];
     if (filter === 'all') meta.push(`<span class="tag tag-${t.tag === 'Töö' ? 'work' : 'home'}">${esc(t.tag)}</span>`);
     return `<div class="task${done ? ' done' : ''}" data-id="${esc(t.id)}">
       <button class="check" data-act="${done ? 'reopen' : 'done'}" aria-label="${done ? 'Ava uuesti' : 'Tehtud'}">
@@ -185,7 +191,8 @@
       </button>
       <div class="t-body" data-act="edit">
         <div class="t-title">${esc(t.title)}</div>
-        ${t.firstStep && !done ? `<div class="t-step">${esc(t.firstStep)}</div>` : ''}
+        ${lastLog && !done ? `<div class="t-log">${esc(fmtDay(lastLog.split('|')[0]))} ${esc(lastLog.split('|').slice(1).join('|'))}</div>`
+    : t.firstStep && !done ? `<div class="t-step">${esc(t.firstStep)}</div>` : ''}
         ${meta.length ? `<div class="t-meta">${meta.join('<span class="sep">·</span>')}</div>` : ''}
       </div>
     </div>`;
@@ -262,9 +269,16 @@
     form.time.value = t ? t.time : '';
     form.firstStep.value = t ? t.firstStep : '';
     form.notes.value = t ? t.notes : '';
+    form.repeat.value = t && t.repeat ? (t.repeat.startsWith('month') ? 'month' : t.repeat) : '';
     setSeg('tag-seg', t ? t.tag : (filter === 'all' ? 'Era' : filter));
     setSeg('list-seg', t ? t.list : '');
     $('#delete').classList.toggle('hidden', !t);
+    $('#log-box').classList.toggle('hidden', !t);
+    form.logText.value = '';
+    $('#log-list').innerHTML = (t && t.log ? t.log.split('\n') : []).map((l) => {
+      const [d, ...rest] = l.split('|');
+      return `<li><time>${esc(fmtDay(d))}</time><span>${esc(rest.join('|'))}</span></li>`;
+    }).join('');
     touched = {};
     $('#parse-hint').textContent = '';
     $('#editor').showModal();
@@ -295,9 +309,14 @@
     const data = {
       title: form.title.value.trim(), tag: segVal('tag-seg'), list: segVal('list-seg'),
       due: form.due.value, time: form.time.value, firstStep: form.firstStep.value.trim(), notes: form.notes.value.trim(),
+      repeat: form.repeat.value,
     };
     const parsed = parseTitle();
     if (parsed) data.title = parsed.title;
+    if (data.repeat && !data.due) data.due = today();
+    if (data.repeat === 'month') {
+      data.repeat = editing && /^month:/.test(editing.repeat) ? editing.repeat : 'month:' + Number(data.due.slice(8));
+    }
     if (!data.title) return;
     $('#editor').close();
     if (editing) {
@@ -309,6 +328,29 @@
     }
   });
   $('#cancel').addEventListener('click', () => $('#editor').close());
+
+  // jätk: "minu osa tehtud, ootan vastust" (kuupäev tekstist, muidu 3 päeva pärast küsi järele)
+  function addLog(wait) {
+    const text = form.logText.value.trim();
+    if (!editing || !text) { form.logText.focus(); return; }
+    const id = editing.id;
+    const data = { id, text, wait };
+    if (wait) {
+      const p = window.kkParse ? window.kkParse(text) : null;
+      const d = new Date(); d.setDate(d.getDate() + 3);
+      data.due = p && p.due ? p.due : isoDay(d);
+    }
+    $('#editor').close();
+    mutate('addLog', data, () => {
+      tasks = tasks.map((t) => (t.id !== id ? t : {
+        ...t, log: `${today()}|${text}` + (t.log ? '\n' + t.log : ''),
+        ...(wait ? { list: 'ootan', due: data.due, time: '' } : {}),
+      }));
+    });
+  }
+  $('#log-add').addEventListener('click', () => addLog(false));
+  $('#log-wait').addEventListener('click', () => addLog(true));
+  form.logText.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addLog(false); } });
   $('#delete').addEventListener('click', () => {
     if (!editing || !confirm('Kustutan selle asja?')) return;
     const id = editing.id;
@@ -346,6 +388,45 @@
   });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { load(); loadWeather(); } });
 
+  // ---------- teated (Firebase Cloud Messaging) ----------
+  const pushReady = () => !DEMO && CFG.FIREBASE && CFG.VAPID_KEY && 'Notification' in window && 'serviceWorker' in navigator;
+  function loadScript(src) {
+    return new Promise((ok, fail) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = fail; document.head.appendChild(s); });
+  }
+  function updateBell() {
+    $('#bell').classList.toggle('hidden', !pushReady() || (Notification.permission === 'granted' && store.get('kk_push')));
+  }
+  async function enablePush(silent) {
+    if (!pushReady()) return;
+    if (Notification.permission !== 'granted') {
+      if (silent) return;
+      if ((await Notification.requestPermission()) !== 'granted') { syncMsg('Teated on keelatud. Luba need telefoni seadetest.'); return; }
+    }
+    try {
+      const v = '10.14.1';
+      if (!window.firebase) {
+        await loadScript(`https://www.gstatic.com/firebasejs/${v}/firebase-app-compat.js`);
+        await loadScript(`https://www.gstatic.com/firebasejs/${v}/firebase-messaging-compat.js`);
+      }
+      if (!firebase.apps.length) firebase.initializeApp(CFG.FIREBASE);
+      const reg = await navigator.serviceWorker.ready;
+      const fcm = await firebase.messaging().getToken({ vapidKey: CFG.VAPID_KEY, serviceWorkerRegistration: reg });
+      const saved = store.get('kk_push');
+      if (!saved || saved.token !== fcm) {
+        const res = await api('registerPush', { token: fcm, ua: navigator.userAgent.slice(0, 120) });
+        await (await caches.open('kk-device')).put('secret', new Response(res.secret));
+        store.set('kk_push', { token: fcm });
+        if (!silent) syncMsg('Teated on sees ✓');
+        setTimeout(() => syncMsg(''), 2500);
+      }
+    } catch (e) {
+      if (!silent) syncMsg('Teateid ei õnnestunud sisse lülitada.');
+      console.error(e);
+    }
+    updateBell();
+  }
+  $('#bell').addEventListener('click', () => enablePush(false));
+
   // ---------- käivitus ----------
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
   render();
@@ -355,7 +436,8 @@
     syncMsg('Demorežiim: server pole veel seadistatud, andmed on ainult selles brauseris.');
   } else {
     token = store.get('kk_token');
-    if (tokenValid(token)) { showMain(); load(); } else showLogin();
+    if (tokenValid(token)) { showMain(); load(); enablePush(true); } else showLogin();
+    updateBell();
     initGoogle();
   }
 })();

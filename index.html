@@ -36,9 +36,14 @@
           <div id="today-date" class="eyebrow"></div>
           <h1 id="greeting">Tere</h1>
         </div>
+        <div class="top-actions">
+        <button id="bell" class="icon-btn hidden" aria-label="Luba teated">
+          <svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+        </button>
         <button id="refresh" class="icon-btn" aria-label="Värskenda">
           <svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg>
         </button>
+        </div>
       </div>
       <div id="weather" class="weather"></div>
       <div id="today-summary" class="summary"></div>
@@ -77,6 +82,25 @@
         <button type="button" data-v="">Tavaline</button>
         <button type="button" data-v="ootan">Ootan</button>
         <button type="button" data-v="kunagi">Kunagi</button>
+      </div>
+      <label class="select-row">Kordub
+        <select name="repeat">
+          <option value="">Ei kordu</option>
+          <option value="day">Iga päev</option>
+          <option value="week">Iga nädal</option>
+          <option value="month">Iga kuu (nädalavahetusel reedel)</option>
+          <option value="lastwork">Kuu viimane tööpäev</option>
+          <option value="year">Iga aasta</option>
+        </select>
+      </label>
+      <div id="log-box" class="log-box hidden">
+        <div class="log-title">Jätk</div>
+        <input name="logText" placeholder="nt saatsin kirja, vastus reedeks" autocomplete="off">
+        <div class="log-actions">
+          <button type="button" id="log-add">Lisa märge</button>
+          <button type="button" id="log-wait">Ootan vastust</button>
+        </div>
+        <ul id="log-list"></ul>
       </div>
       <textarea name="notes" rows="3" placeholder="Märkmed"></textarea>
       <div class="actions">
