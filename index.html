@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="et">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#14161a">
+  <meta name="referrer" content="no-referrer">
+  <title>Kuldkala</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="style.css">
+  <script src="config.js"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <div id="login" class="screen hidden">
+    <div class="login-box">
+      <div class="logo">🐟</div>
+      <h1>Kuldkala</h1>
+      <p>Logi sisse oma Google'i kontoga.</p>
+      <div id="gbtn"></div>
+      <p id="login-msg" class="muted"></p>
+    </div>
+  </div>
+
+  <div id="main" class="screen hidden">
+    <header>
+      <div class="filters" role="tablist">
+        <button data-filter="all" class="active">Kõik</button>
+        <button data-filter="Töö">Töö</button>
+        <button data-filter="Era">Era</button>
+      </div>
+      <button id="refresh" class="icon-btn" aria-label="Värskenda">↻</button>
+    </header>
+
+    <section id="today-card" class="card">
+      <div id="today-date"></div>
+      <div id="weather" class="muted">Ilm laeb…</div>
+      <div id="today-summary"></div>
+    </section>
+
+    <div id="sync-msg" class="hidden"></div>
+    <main id="list"></main>
+
+    <button id="add" class="fab" aria-label="Lisa">+</button>
+  </div>
+
+  <dialog id="editor">
+    <form id="task-form" method="dialog">
+      <h2 id="editor-title">Uus asi</h2>
+      <input name="title" placeholder="Mis vaja teha?" autocomplete="off" required>
+      <div class="seg" id="tag-seg">
+        <button type="button" data-v="Era">Era</button>
+        <button type="button" data-v="Töö">Töö</button>
+      </div>
+      <div class="row">
+        <label>Tähtaeg <input type="date" name="due"></label>
+        <label>Kell <input type="time" name="time"></label>
+      </div>
+      <input name="firstStep" placeholder="Esimene samm (~5 min)" autocomplete="off">
+      <div class="seg" id="list-seg">
+        <button type="button" data-v="">Tavaline</button>
+        <button type="button" data-v="ootan">Ootan</button>
+        <button type="button" data-v="kunagi">Kunagi</button>
+      </div>
+      <textarea name="notes" rows="3" placeholder="Märkmed"></textarea>
+      <div class="actions">
+        <button type="button" id="delete" class="danger hidden">Kustuta</button>
+        <span class="spacer"></span>
+        <button type="button" id="cancel">Loobu</button>
+        <button type="submit" class="primary">Salvesta</button>
+      </div>
+    </form>
+  </dialog>
+</body>
+</html>
