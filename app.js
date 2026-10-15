@@ -36,6 +36,10 @@
     try { return JSON.parse(atob(tok.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).exp * 1000; }
     catch { return 0; }
   }
+  function userName() {
+    try { return token ? JSON.parse(decodeURIComponent(escape(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))))).given_name || '' : ''; }
+    catch { return ''; }
+  }
   function tokenValid(tok) { return tok && jwtExp(tok) - Date.now() > 60e3; }
 
   function onCredential(resp) {
@@ -172,38 +176,42 @@
   function taskHtml(t) {
     const done = t.status === 'done';
     const late = !done && t.due && t.due < today();
+    const meta = [];
+    if (t.due) meta.push(`<span class="${late ? 'late' : ''}">${esc(fmtDue(t))}</span>`);
+    if (filter === 'all') meta.push(`<span class="tag tag-${t.tag === 'Töö' ? 'work' : 'home'}">${esc(t.tag)}</span>`);
     return `<div class="task${done ? ' done' : ''}" data-id="${esc(t.id)}">
-      <button class="check" data-act="${done ? 'reopen' : 'done'}" aria-label="${done ? 'Ava uuesti' : 'Tehtud'}">${done ? '✓' : ''}</button>
+      <button class="check" data-act="${done ? 'reopen' : 'done'}" aria-label="${done ? 'Ava uuesti' : 'Tehtud'}">
+        <svg viewBox="0 0 24 24"><path d="M6 12.5l4 4 8-9"/></svg>
+      </button>
       <div class="t-body" data-act="edit">
         <div class="t-title">${esc(t.title)}</div>
-        ${t.firstStep && !done ? `<div class="t-step">→ ${esc(t.firstStep)}</div>` : ''}
-        <div class="t-meta">
-          ${filter === 'all' ? `<span class="pill ${esc(t.tag)}">${esc(t.tag)}</span>` : ''}
-          ${t.due ? `<span class="${late ? 'late' : ''}">📅 ${esc(fmtDue(t))}</span>` : ''}
-        </div>
+        ${t.firstStep && !done ? `<div class="t-step">${esc(t.firstStep)}</div>` : ''}
+        ${meta.length ? `<div class="t-meta">${meta.join('<span class="sep">·</span>')}</div>` : ''}
       </div>
     </div>`;
   }
 
   function render() {
-    document.querySelectorAll('.filters button').forEach((b) => b.classList.toggle('active', b.dataset.filter === filter));
+    document.querySelectorAll('.segmented button').forEach((b) => b.classList.toggle('active', b.dataset.filter === filter));
     const gs = groups();
     const html = gs.filter((g) => g.items.length).map((g) => {
       const body = g.items.map(taskHtml).join('');
       return g.collapsed
-        ? `<details class="group ${g.key}"><summary>${g.title} (${g.items.length})</summary>${body}</details>`
-        : `<section class="group ${g.key}"><h3>${g.title} (${g.items.length})</h3>${body}</section>`;
+        ? `<details class="group ${g.key}"><summary><span>${g.title}</span><span class="count">${g.items.length}</span></summary><div class="rows">${body}</div></details>`
+        : `<section class="group ${g.key}"><h3><span>${g.title}</span><span class="count">${g.items.length}</span></h3><div class="rows">${body}</div></section>`;
     }).join('');
-    $('#list').innerHTML = html || '<p class="empty">Kõik tehtud! 🎉</p>';
+    $('#list').innerHTML = html || '<div class="empty"><div class="empty-mark">✓</div>Kõik tehtud</div>';
 
     const d = new Date();
     const ds = d.toLocaleDateString('et-EE', { weekday: 'long', day: 'numeric', month: 'long' });
     $('#today-date').textContent = ds.charAt(0).toUpperCase() + ds.slice(1);
     const n = (k) => gs.find((g) => g.key === k).items.length;
-    const parts = [];
-    if (n('overdue')) parts.push(`<span class="late">${n('overdue')} tähtaeg möödas</span>`);
-    parts.push(`${n('today')} täna`);
-    $('#today-summary').innerHTML = parts.join(' · ');
+    const parts = [`<b>${n('today')}</b> täna`];
+    if (n('overdue')) parts.unshift(`<b class="late">${n('overdue')}</b> üle tähtaja`);
+    $('#today-summary').innerHTML = parts.join('<span class="sep">·</span>');
+    const h = d.getHours();
+    const hi = h < 5 ? 'Head ööd' : h < 11 ? 'Tere hommikust' : h < 17 ? 'Tere päevast' : 'Tere õhtust';
+    $('#greeting').textContent = userName() ? `${hi}, ${userName()}` : hi;
   }
 
   // ---------- ilm (Open-Meteo, võtit pole vaja) ----------
@@ -227,14 +235,16 @@
       store.set('kk_weather', { day: today(), at: Date.now(), data });
       showWeather(data, w.name);
     } catch {
-      $('#weather').textContent = 'Ilma ei saanud laadida.';
+      $('#weather').innerHTML = '<span class="w-desc"><span>Ilma ei saanud laadida</span></span>';
     }
   }
   function showWeather(d, name) {
     const dl = d.daily;
     const r = (x) => Math.round(x);
-    $('#weather').textContent = `${name}: ${WMO[dl.weather_code[0]] || ''}, ${r(dl.temperature_2m_min[0])}…${r(dl.temperature_2m_max[0])}°` +
-      ` (praegu ${r(d.current.temperature_2m)}°), sademed ${dl.precipitation_probability_max[0] ?? 0}%, tuul kuni ${r(dl.wind_speed_10m_max[0])} m/s`;
+    const [icon, ...desc] = (WMO[dl.weather_code[0]] || '· ').split(' ');
+    $('#weather').innerHTML = `<span class="w-icon">${icon}</span><span class="w-temp">${r(d.current.temperature_2m)}°</span>` +
+      `<span class="w-desc">${esc(desc.join(' '))}<br><span>${esc(name)} · ${r(dl.temperature_2m_min[0])}° / ${r(dl.temperature_2m_max[0])}°` +
+      ` · 💧 ${dl.precipitation_probability_max[0] ?? 0}% · ${r(dl.wind_speed_10m_max[0])} m/s</span></span>`;
   }
 
   // ---------- muutmise aken ----------
@@ -320,14 +330,20 @@
     if (act === 'edit') openEditor(t);
     else if (act === 'done' || act === 'reopen') {
       const patch = act === 'done' ? { status: 'done', doneAt: new Date().toISOString() } : { status: 'open', doneAt: '' };
-      mutate(act, { id }, () => { tasks = tasks.map((x) => (x.id === id ? { ...x, ...patch } : x)); });
+      const row = el.closest('.task');
+      row.classList.add('done');
+      if (act === 'done') setTimeout(() => row.classList.add('leaving'), 250);
+      setTimeout(() => mutate(act, { id }, () => { tasks = tasks.map((x) => (x.id === id ? { ...x, ...patch } : x)); }), act === 'done' ? 550 : 0);
     }
   });
-  document.querySelectorAll('.filters button').forEach((b) => b.addEventListener('click', () => {
+  document.querySelectorAll('.segmented button').forEach((b) => b.addEventListener('click', () => {
     filter = b.dataset.filter; store.set('kk_filter', filter); render();
   }));
   $('#add').addEventListener('click', () => openEditor(null));
-  $('#refresh').addEventListener('click', () => { load(); loadWeather(); });
+  $('#refresh').addEventListener('click', (e) => {
+    const b = e.currentTarget; b.classList.remove('spin'); void b.offsetWidth; b.classList.add('spin');
+    load(); loadWeather();
+  });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { load(); loadWeather(); } });
 
   // ---------- käivitus ----------

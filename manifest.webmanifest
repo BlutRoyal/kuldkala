@@ -3,13 +3,30 @@
   "short_name": "Kuldkala",
   "description": "ToDo ja meeldetuletused",
   "lang": "et",
-  "start_url": "./",
-  "scope": "./",
+  "start_url": "/kuldkala/",
+  "scope": "/kuldkala/",
   "display": "standalone",
-  "background_color": "#14161a",
-  "theme_color": "#14161a",
+  "background_color": "#0b0b0d",
+  "theme_color": "#0b0b0d",
   "icons": [
-    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
-  ]
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "id": "/kuldkala/"
 }

@@ -1,6 +1,6 @@
 // Kuldkala service worker: hoiab äpi faile vahemälus, et see avaneks ka nõrga netiga.
-const VERSION = 'kk-v2';
-const SHELL = ['./', 'index.html', 'style.css', 'app.js', 'parse.js', 'config.js', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
+const VERSION = 'kk-v3';
+const SHELL = ['./', 'index.html', 'style.css', 'app.js', 'parse.js', 'config.js', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(VERSION).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
